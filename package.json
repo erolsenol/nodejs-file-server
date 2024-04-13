@@ -5,7 +5,7 @@
   "description": "Simple express file upload middleware that wraps around Busboy",
   "main": "./lib/index",
   "scripts": {
-    "dev": "dotenv -e .env node app/server.js",
+    "dev": "dotenv -e .env nodemon app/server.js",
     "start": "dotenv -e .env.production node app/server.js",
     "pm2:prod": "pm2 start ecosystem.config.js --only express-file-upload-9000",
     "pretest": "node ./test/pretests.js",
@@ -42,6 +42,7 @@
     "express": "^4.18.1",
     "md5": "^2.3.0",
     "mocha": "^10.0.0",
+    "nodemon": "^3.1.0",
     "nyc": "^15.1.0",
     "rimraf": "^3.0.2",
     "rnd-file": "^0.0.1",
