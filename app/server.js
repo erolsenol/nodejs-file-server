@@ -7,7 +7,8 @@ const fileUpload = require('../lib/index');
 const app = express();
 
 const PORT = process.env.PORT;
-const mode = process.env.NODE_ENV;
+const MODE = process.env.NODE_ENV;
+const WRITE_PATH = process.env.NODE_ENV;
 
 app.use('/form', express.static(__dirname + '/index.html'));
 // default options
@@ -30,7 +31,7 @@ app.post('/upload', async function (req, res) {
 
   file = req.files.file;
 
-  uploadPath = path.resolve(__dirname, '../uploads/' + file.name);
+  uploadPath = path.resolve(__dirname, WRITE_PATH + file.name);
 
   console.log('uploadPath', uploadPath);
   const fileStat = await fs.lstat(uploadPath);
