@@ -4,44 +4,47 @@
 name: Node.js CI
 
 on:
-    # push:
-    #     branches: ["main"]
-    pull_request:
-        branches: ["main"]
+  # push:
+  #     branches: ["main"]
+  pull_request:
+    branches: ['main']
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-        strategy:
-            matrix:
-                node-version: [20.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    strategy:
+      matrix:
+        node-version: [20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
-        steps:
-            - name: executing remote ssh copy dist file to server
-              uses: appleboy/scp-action@v0.1.7
-              with:
-                  host: ${{ secrets.HOST }}
-                  username: ${{ secrets.USER }}
-                  password: ${{ secrets.HOST_PASSWORD }}
-                  port: ${{ secrets.PORT }}
-                  passphrase: ${{ secrets.PASSPHRASE }}
-                  source: "./*"
-                  target: express-file-upload
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v3
 
-            - name: executing remote ssh commands pm2 reload
-              uses: appleboy/ssh-action@v1.0.3
-              with:
-                  host: ${{ secrets.HOST }}
-                  username: ${{ secrets.USER }}
-                  password: ${{ secrets.HOST_PASSWORD }}
-                  port: ${{ secrets.PORT }}
-                  passphrase: ${{ secrets.PASSPHRASE }}
-                  script: |
-                      cd express-file-upload
-                      export NVM_DIR=~/.nvm
-                      source ~/.nvm/nvm.sh
-                      npm install
-                      pm2 reload ecosystem.config.js --only express-file-upload-9000
+      - name: executing remote ssh copy dist file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.HOST_PASSWORD }}
+          port: ${{ secrets.PORT }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          source: './*'
+          target: express-file-upload
+
+      - name: executing remote ssh commands pm2 reload
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.HOST_PASSWORD }}
+          port: ${{ secrets.PORT }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          script: |
+            cd express-file-upload
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
+            npm install
+            pm2 reload ecosystem.config.js --only express-file-upload-9000
