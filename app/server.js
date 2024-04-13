@@ -2,6 +2,8 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
+// const bodyParser = require('body-parser');
+const hpp = require('hpp');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -18,6 +20,8 @@ const DOMAIN = process.env.DOMAIN;
 app.use(cors());
 app.use(helmet());
 app.use(fileUpload());
+// app.use(bodyParser.urlencoded());
+app.use(hpp());
 
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
@@ -27,6 +31,7 @@ const limiter = rateLimit({
   // store: ... , // Redis, Memcached, etc. See below.
 });
 app.use(limiter);
+app.disable('x-powered-by');
 
 app.use('/form', express.static(__dirname + '/index.html'));
 
