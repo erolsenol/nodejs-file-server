@@ -8,7 +8,6 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-const { createHtmlInImg } = require('../lib/helper');
 const fileUpload = require('../lib/index');
 const app = express();
 
