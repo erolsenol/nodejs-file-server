@@ -21,5 +21,7 @@ app/uploads/*
 
 yarn.lock
 
+logs
+
 .env
 .env.*
