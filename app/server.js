@@ -8,9 +8,8 @@ const app = express();
 
 const PORT = process.env.PORT;
 const mode = process.env.NODE_ENV;
+
 app.use('/form', express.static(__dirname + '/index.html'));
-console.log('PORT', PORT);
-console.log('mode', mode);
 // default options
 app.use(fileUpload());
 

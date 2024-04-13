@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "dotenv -e .env node app/server.js",
     "start": "dotenv -e .env.production node app/server.js",
+    "pm2:prod": "pm2 start ecosystem.config.js --only express-file-upload-9000",
     "pretest": "node ./test/pretests.js",
     "posttest": "node ./test/posttests.js",
     "test": "nyc  --reporter=html --reporter=text mocha -- -R spec",
