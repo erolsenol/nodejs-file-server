@@ -1,4 +1,7 @@
 const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const { rateLimit } = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -12,7 +15,18 @@ const MODE = process.env.NODE_ENV;
 const WRITE_PATH = process.env.WRITE_PATH;
 const DOMAIN = process.env.DOMAIN;
 
+app.use(cors());
+app.use(helmet());
 app.use(fileUpload());
+
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  limit: 300, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  standardHeaders: 'RateLimit',
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+  // store: ... , // Redis, Memcached, etc. See below.
+});
+app.use(limiter);
 
 app.use('/form', express.static(__dirname + '/index.html'));
 
