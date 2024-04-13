@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 require('dotenv').config();
 
 const fileUpload = require('../lib/index');
@@ -8,7 +8,7 @@ const app = express();
 
 const PORT = process.env.PORT;
 const MODE = process.env.NODE_ENV;
-const WRITE_PATH = process.env.NODE_ENV;
+const WRITE_PATH = process.env.WRITE_PATH;
 
 app.use('/form', express.static(__dirname + '/index.html'));
 // default options
@@ -34,8 +34,9 @@ app.post('/upload', async function (req, res) {
   uploadPath = path.resolve(__dirname, WRITE_PATH + file.name);
 
   console.log('uploadPath', uploadPath);
-  const fileStat = await fs.lstat(uploadPath);
-  if (fileStat.isFile()) {
+  const fileStat = fs.existsSync(uploadPath);
+  console.log('fileStat', fileStat);
+  if (fileStat) {
     return res.status(400).json({
       success: false,
       error: 'file_already_exists',
