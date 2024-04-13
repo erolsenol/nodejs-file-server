@@ -20,3 +20,6 @@ app/uploads/*
 !app/uploads/placeholder.txt
 
 yarn.lock
+
+.env
+.env.*

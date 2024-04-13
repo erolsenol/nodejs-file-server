@@ -1,12 +1,16 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
+require('dotenv').config();
+
 const fileUpload = require('../lib/index');
 const app = express();
 
-const PORT = 8000;
+const PORT = process.env.PORT;
+const mode = process.env.NODE_ENV;
 app.use('/form', express.static(__dirname + '/index.html'));
-
+console.log('PORT', PORT);
+console.log('mode', mode);
 // default options
 app.use(fileUpload());
 

@@ -5,7 +5,8 @@
   "description": "Simple express file upload middleware that wraps around Busboy",
   "main": "./lib/index",
   "scripts": {
-    "start": "node app/server.js",
+    "dev": "dotenv -e .env node app/server.js",
+    "start": "dotenv -e .env.production node app/server.js",
     "pretest": "node ./test/pretests.js",
     "posttest": "node ./test/posttests.js",
     "test": "nyc  --reporter=html --reporter=text mocha -- -R spec",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "busboy": "^1.6.0",
+    "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "path": "^0.12.7"
   },
