@@ -19,6 +19,9 @@ app.use('/form', express.static(__dirname + '/index.html'));
 app.get('/ping', function (req, res) {
   res.send('pong');
 });
+app.get('/', function (req, res) {
+  res.send('ok');
+});
 
 app.post('/upload', function (req, res) {
   try {
