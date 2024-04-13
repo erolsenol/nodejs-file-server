@@ -15,7 +15,7 @@ app.get('/ping', function (req, res) {
 });
 
 app.post('/upload', async function (req, res) {
-  let sampleFile;
+  let file;
   let uploadPath;
 
   if (!req.files || Object.keys(req.files).length === 0) {
@@ -25,13 +25,12 @@ app.post('/upload', async function (req, res) {
 
   console.log('req.files >>>', req.files); // eslint-disable-line
 
-  sampleFile = req.files.sampleFile;
+  file = req.files.file;
 
-  uploadPath = path.resolve(__dirname, '../uploads/' + sampleFile.name);
+  uploadPath = path.resolve(__dirname, '../uploads/' + file.name);
 
   console.log('uploadPath', uploadPath);
   const fileStat = await fs.lstat(uploadPath);
-
   if (fileStat.isFile()) {
     return res.status(400).json({
       success: false,
@@ -39,7 +38,7 @@ app.post('/upload', async function (req, res) {
     });
   }
 
-  sampleFile.mv(uploadPath, function (err) {
+  file.mv(uploadPath, function (err) {
     if (err) {
       return res.status(500).send(err);
     }
