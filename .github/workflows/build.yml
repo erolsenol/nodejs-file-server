@@ -28,7 +28,7 @@ jobs:
                   password: ${{ secrets.HOST_PASSWORD }}
                   port: ${{ secrets.PORT }}
                   passphrase: ${{ secrets.PASSPHRASE }}
-                  source: "*"
+                  source: "./*"
                   target: express-file-upload
 
             - name: executing remote ssh commands pm2 reload
