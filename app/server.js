@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-const { createHtmlInImg } = require('../lib/helper');
+const { createFolder } = require('../lib/helper');
 const fileUpload = require('../lib/index');
 const app = express();
 
@@ -42,10 +42,11 @@ app.get('/', function (req, res) {
   res.send('ok');
 });
 
-app.post('/upload', function (req, res) {
+app.post('/upload', async function (req, res) {
   try {
     let file;
     let uploadPath;
+    let { savepath = '' } = req.query;
 
     if (!req.files || Object.keys(req.files).length === 0) {
       res.status(400).send('No files were uploaded.');
@@ -53,26 +54,57 @@ app.post('/upload', function (req, res) {
     }
 
     file = req.files.file;
-    uploadPath = path.resolve(__dirname, WRITE_PATH + file.name);
+    uploadPath = path.resolve(__dirname, WRITE_PATH + savepath + file.name);
 
     const fileCheck = fs.existsSync(uploadPath);
     if (fileCheck) {
       return res.status(400).json({
         success: false,
-        error: 'file_already_exists',
+        message: 'file_already_exists',
       });
     }
 
+    await createFolder(uploadPath);
     file.mv(uploadPath, function (err) {
       if (err) {
         return res.status(500).send(err);
       }
-
+      fs.chmodSync(uploadPath, '755');
       res.json({
         success: true,
         path: uploadPath,
         message: 'file_uploaded',
       });
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error,
+    });
+  }
+});
+
+app.delete('/delete', async function (req, res) {
+  try {
+    let { filePath = '' } = req.query;
+
+    deletePath = path.resolve(__dirname, WRITE_PATH + filePath);
+
+    const fileCheck = fs.existsSync(deletePath);
+    if (!fileCheck) {
+      return res.status(400).json({
+        success: false,
+        message: 'file_not_found',
+      });
+    }
+
+    fs.access(deletePath, fs.constants.F_OK, async (err) => {
+      if (err) {
+        res.status(400).json({ success: false, message: err });
+      } else {
+        await fs.unlinkSync(deletePath);
+        res.json({ success: true });
+      }
     });
   } catch (error) {
     return res.status(400).json({
