@@ -13,9 +13,8 @@ const fileUpload = require('../lib/index');
 const app = express();
 
 const PORT = process.env.PORT;
-const MODE = process.env.NODE_ENV;
+const PRODUCTION = process.env.NODE_ENV == "production";
 const WRITE_PATH = process.env.WRITE_PATH;
-const DOMAIN = process.env.DOMAIN;
 
 app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: false }));
