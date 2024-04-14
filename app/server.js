@@ -67,6 +67,7 @@ app.post('/upload', async function (req, res) {
     await createFolder(uploadPath);
     file.mv(uploadPath, function (err) {
       if (err) {
+        console.log('err', err);
         return res.status(500).send(err);
       }
       fs.chmodSync(uploadPath, '755');
@@ -100,6 +101,7 @@ app.delete('/delete', async function (req, res) {
 
     fs.access(deletePath, fs.constants.F_OK, async (err) => {
       if (err) {
+        console.log('err', err);
         res.status(400).json({ success: false, message: err });
       } else {
         await fs.unlinkSync(deletePath);
