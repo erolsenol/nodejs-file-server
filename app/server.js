@@ -119,8 +119,9 @@ app.delete('/delete', async function (req, res) {
 app.get('/images/*', function (req, res) {
   try {
     const filePath = req.path.replace('/images/', '');
+    const decodeFilePath = decodeURIComponent(filePath);
 
-    const fileDirectory = path.resolve(__dirname, WRITE_PATH + filePath);
+    const fileDirectory = path.resolve(__dirname, WRITE_PATH + decodeFilePath);
 
     var data = fs.readFileSync(fileDirectory);
     res.contentType('image/jpeg');
