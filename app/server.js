@@ -57,7 +57,6 @@ app.post('/upload', async function (req, res) {
     uploadPath = path.resolve(__dirname, WRITE_PATH + savepath + file.name);
 
     const fileCheck = fs.existsSync(uploadPath);
-    console.log('fileCheck', fileCheck);
     if (fileCheck) {
       return res.status(400).json({
         success: false,
@@ -70,12 +69,42 @@ app.post('/upload', async function (req, res) {
       if (err) {
         return res.status(500).send(err);
       }
-
+      fs.chmodSync(uploadPath, '755');
       res.json({
         success: true,
         path: uploadPath,
         message: 'file_uploaded',
       });
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error,
+    });
+  }
+});
+
+app.delete('/delete', async function (req, res) {
+  try {
+    let { filePath = '' } = req.query;
+
+    deletePath = path.resolve(__dirname, WRITE_PATH + filePath);
+
+    const fileCheck = fs.existsSync(deletePath);
+    if (!fileCheck) {
+      return res.status(400).json({
+        success: false,
+        message: 'file_not_found',
+      });
+    }
+
+    fs.access(deletePath, fs.constants.F_OK, async (err) => {
+      if (err) {
+        res.status(400).json({ success: false, message: err });
+      } else {
+        await fs.unlinkSync(deletePath);
+        res.json({ success: true });
+      }
     });
   } catch (error) {
     return res.status(400).json({
