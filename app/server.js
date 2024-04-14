@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+const { createFolder } = require('../lib/helper');
 const fileUpload = require('../lib/index');
 const app = express();
 
@@ -41,10 +42,11 @@ app.get('/', function (req, res) {
   res.send('ok');
 });
 
-app.post('/upload', function (req, res) {
+app.post('/upload', async function (req, res) {
   try {
     let file;
     let uploadPath;
+    let { savepath = '' } = req.query;
 
     if (!req.files || Object.keys(req.files).length === 0) {
       res.status(400).send('No files were uploaded.');
@@ -52,16 +54,18 @@ app.post('/upload', function (req, res) {
     }
 
     file = req.files.file;
-    uploadPath = path.resolve(__dirname, WRITE_PATH + file.name);
+    uploadPath = path.resolve(__dirname, WRITE_PATH + savepath + file.name);
 
     const fileCheck = fs.existsSync(uploadPath);
+    console.log('fileCheck', fileCheck);
     if (fileCheck) {
       return res.status(400).json({
         success: false,
-        error: 'file_already_exists',
+        message: 'file_already_exists',
       });
     }
 
+    await createFolder(uploadPath);
     file.mv(uploadPath, function (err) {
       if (err) {
         return res.status(500).send(err);
