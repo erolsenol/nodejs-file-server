@@ -18,7 +18,7 @@ const WRITE_PATH = process.env.WRITE_PATH;
 const DOMAIN = process.env.DOMAIN;
 
 app.use(cors());
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(fileUpload());
 // app.use(bodyParser.urlencoded());
 app.use(hpp());
