@@ -2,7 +2,6 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
-// const bodyParser = require('body-parser');
 const hpp = require('hpp');
 const path = require('path');
 const fs = require('fs');
@@ -19,7 +18,6 @@ const WRITE_PATH = process.env.WRITE_PATH;
 app.use(cors());
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(fileUpload());
-// app.use(bodyParser.urlencoded());
 app.use(hpp());
 
 const limiter = rateLimit({
@@ -125,10 +123,6 @@ app.get('/images/*', function (req, res) {
     var data = fs.readFileSync(fileDirectory);
     res.contentType('image/jpeg');
     res.send(data);
-
-    // download
-    // res.download(fileDirectory);
-    // res.sendFile(fileDirectory);
   } catch (error) {
     return res.status(400).json({
       success: false,
