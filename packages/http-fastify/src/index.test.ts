@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import type { FileRecord, FileRepository, FileStorage } from '@file-server/core';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './index.js';
+import { createMetrics } from './metrics.js';
 
 const record: FileRecord = {
   id: 'file-1', name: 'hello.txt', mimeType: 'text/plain', size: 11,
@@ -22,7 +23,7 @@ function createTestApp() {
     findById: async () => record,
     delete: async () => undefined,
   };
-  return createApp({ apiKey: 'test-api-key-123456', maxFileSize: 1024, allowedMimeTypes: new Set(['text/plain']), storage, repository });
+  return createApp({ apiKey: 'test-api-key-123456', maxFileSize: 1024, allowedMimeTypes: new Set(['text/plain']), storage, repository, metrics: createMetrics() });
 }
 
 describe('Fastify HTTP adapter', () => {
@@ -47,6 +48,14 @@ describe('Fastify HTTP adapter', () => {
     const response = await app.inject({ method: 'GET', url: '/v1/files/file-1/content', headers: { 'x-api-key': 'test-api-key-123456', range: 'bytes=99-100' } });
     expect(response.statusCode).toBe(416);
     expect(response.headers['content-range']).toBe('bytes */11');
+    await app.close();
+  });
+
+  it('exposes authenticated Prometheus metrics', async () => {
+    const app = createTestApp();
+    const response = await app.inject({ method: 'GET', url: '/metrics', headers: { 'x-api-key': 'test-api-key-123456' } });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('fileserver_http_requests_total');
     await app.close();
   });
 });

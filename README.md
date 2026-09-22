@@ -21,6 +21,8 @@ The API is available at `http://localhost:3000`; Swagger UI is at `/documentatio
 
 The machine-readable OpenAPI document is available at `/documentation/json`. Protected operations use the `ApiKeyAuth` security scheme and public probes are limited to `/health/live` and `/health/ready`.
 
+Prometheus-compatible metrics are available at `/metrics` and require the same API key. They include request totals, latency histograms, and successful upload counts.
+
 ```bash
 curl -X POST http://localhost:3000/v1/files \
   -H 'x-api-key: change-me-in-production' \

@@ -7,6 +7,7 @@ import type { FileRepository, FileStorage } from '@file-server/core';
 import { FileServerError } from '@file-server/core';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ulid } from 'ulid';
+import type { FileServerMetrics } from './metrics.js';
 
 export interface HttpOptions {
   readonly apiKey: string;
@@ -15,6 +16,7 @@ export interface HttpOptions {
   readonly storage: FileStorage;
   readonly repository: FileRepository;
   readonly rateLimitMax?: number;
+  readonly metrics?: FileServerMetrics;
 }
 
 interface ByteRange {
@@ -41,6 +43,17 @@ const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g,
 
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
+  const startTimes = new WeakMap<object, bigint>();
+  app.addHook('onRequest', async (request) => { startTimes.set(request, process.hrtime.bigint()); });
+  app.addHook('onResponse', async (request, reply) => {
+    if (!options.metrics) return;
+    const start = startTimes.get(request);
+    const duration = start ? Number(process.hrtime.bigint() - start) / 1_000_000_000 : 0;
+    const route = request.routeOptions.url ?? 'unknown';
+    const labels = { method: request.method, route, status: String(reply.statusCode) };
+    options.metrics.requestsTotal.inc(labels);
+    options.metrics.requestDurationSeconds.observe(labels, duration);
+  });
   void app.register(multipart, { limits: { fileSize: options.maxFileSize, files: 1 } });
   void app.register(helmet, { global: true });
   void app.register(rateLimit, { max: options.rateLimitMax ?? 100, timeWindow: '1 minute' });
@@ -63,6 +76,13 @@ export function createApp(options: HttpOptions): FastifyInstance {
     if (request.headers['x-api-key'] !== options.apiKey) throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
   };
 
+  app.get('/metrics', async (request, reply) => {
+    authenticate(request);
+    if (!options.metrics) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Metrics are disabled' } });
+    reply.type(options.metrics.registry.contentType);
+    return options.metrics.registry.metrics();
+  });
+
   app.get('/health/live', async () => ({ status: 'ok' }));
   app.get('/health/ready', async (_request, reply) => { await options.storage.check(); return reply.send({ status: 'ok' }); });
 
@@ -76,6 +96,7 @@ export function createApp(options: HttpOptions): FastifyInstance {
     if (part.file.truncated) { await options.storage.delete(id); throw new FileServerError('LIMIT_EXCEEDED', 'File is too large', 413); }
     const record = { id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
     await options.repository.create(record);
+    options.metrics?.uploadsTotal.inc({ status: 'success' });
     return reply.code(201).send(record);
   });
 
@@ -108,3 +129,4 @@ export function createApp(options: HttpOptions): FastifyInstance {
 }
 
 export { parseLimit };
+export { createMetrics } from './metrics.js';

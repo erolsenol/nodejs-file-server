@@ -5,6 +5,7 @@ import { JsonFileRepository } from '@file-server/repository-json';
 import { SqliteFileRepository } from '@file-server/repository-sqlite';
 import { LocalFileStorage } from '@file-server/storage-local';
 import { createS3Storage } from '@file-server/storage-s3';
+import { createMetrics } from '@file-server/http-fastify';
 import { loadConfig } from './config.js';
 
 const config = loadConfig();
@@ -17,11 +18,13 @@ if (config.storageDriver === 's3' && !config.s3Bucket) throw new Error('S3_BUCKE
 const storage = config.storageDriver === 's3'
   ? createS3Storage({ bucket: config.s3Bucket!, region: config.s3Region, endpoint: config.s3Endpoint, forcePathStyle: config.s3ForcePathStyle, accessKeyId: config.s3AccessKeyId, secretAccessKey: config.s3SecretAccessKey })
   : new LocalFileStorage(join(dataDir, 'objects'));
+const metrics = createMetrics();
 const app = createApp({
   apiKey: config.apiKey,
   maxFileSize: parseLimit(String(config.maxFileSizeBytes)),
   allowedMimeTypes: config.allowedMimeTypes,
   rateLimitMax: config.rateLimitMax,
+  metrics,
   storage,
   repository,
 });
