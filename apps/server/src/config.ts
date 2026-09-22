@@ -51,11 +51,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (parsed.NODE_ENV === 'production' && parsed.API_KEY === 'development-only-change-me') {
     throw new Error('API_KEY must be changed before starting in production');
   }
-  const apiKeys = parsed.API_KEYS ? new Map(parsed.API_KEYS.split(',').map((entry) => {
+  const apiKeys = parsed.API_KEYS ? parsed.API_KEYS.split(',').reduce((keys, entry) => {
     const separator = entry.indexOf(':');
     if (separator < 1 || separator === entry.length - 1) throw new Error('API_KEYS entries must use id:secret format');
-    return [entry.slice(0, separator).trim(), entry.slice(separator + 1).trim()] as const;
-  })) : undefined;
+    const id = entry.slice(0, separator).trim();
+    const secret = entry.slice(separator + 1).trim();
+    if (!id || !secret) throw new Error('API_KEYS entries must use id:secret format');
+    if (keys.has(id)) throw new Error(`Duplicate API_KEYS principal: ${id}`);
+    keys.set(id, secret);
+    return keys;
+  }, new Map<string, string>()) : undefined;
   return {
     nodeEnv: parsed.NODE_ENV,
     host: parsed.HOST,
