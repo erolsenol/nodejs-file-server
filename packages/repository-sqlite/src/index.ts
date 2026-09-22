@@ -65,6 +65,11 @@ export class SqliteFileRepository implements FileRepository {
     await this.persist(database);
   }
 
+  public async totalSize(ownerId?: string): Promise<number> {
+    const rows = query(await this.database, ownerId ? 'SELECT COALESCE(SUM(size), 0) AS total_size FROM files WHERE owner_id = ?' : 'SELECT COALESCE(SUM(size), 0) AS total_size FROM files', ownerId ? [ownerId] : []);
+    return Number((rows[0] as unknown as { total_size: number } | undefined)?.total_size ?? 0);
+  }
+
   public async close(): Promise<void> {
     (await this.database).close();
   }
@@ -77,7 +82,7 @@ export class SqliteFileRepository implements FileRepository {
   }
 }
 
-interface SqliteRow { id: string; owner_id: string; name: string; mime_type: string; size: number; checksum: string; created_at: string }
+interface SqliteRow { id: string; owner_id: string; name: string; mime_type: string; size: number; checksum: string; created_at: string; total_size?: number }
 type SqlValue = string | number | null | Uint8Array;
 const query = (database: Database, sql: string, params: readonly SqlValue[]): SqliteRow[] => {
   const statement = database.prepare(sql);

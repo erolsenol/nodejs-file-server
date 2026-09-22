@@ -19,7 +19,16 @@ describe('JsonFileRepository', () => {
     const reloaded = new JsonFileRepository(file);
     await reloaded.load();
     expect(await reloaded.findById(record.id)).toEqual(record);
+    expect(await reloaded.totalSize(record.ownerId)).toBe(record.size);
     expect(JSON.parse(await readFile(file, 'utf8'))).toEqual([record]);
+  });
+
+  it('calculates usage per owner', async () => {
+    const repository = new JsonFileRepository(join(tmpdir(), 'unused-files.json'));
+    await repository.create(record);
+    await repository.create({ ...record, id: 'file-2', ownerId: 'other', size: 8 });
+    expect(await repository.totalSize('default')).toBe(5);
+    expect(await repository.totalSize('other')).toBe(8);
   });
 
   it('fails closed when persisted data is malformed', async () => {

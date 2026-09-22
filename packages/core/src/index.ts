@@ -21,6 +21,7 @@ export interface FileRepository {
   list(limit: number, offset: number, ownerId?: string): Promise<readonly FileRecord[]>;
   findById(id: string, ownerId?: string): Promise<FileRecord | null>;
   delete(id: string, ownerId?: string): Promise<void>;
+  totalSize?(ownerId?: string): Promise<number>;
 }
 
 export class FileServerError extends Error {

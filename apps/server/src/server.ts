@@ -23,6 +23,7 @@ const app = createApp({
   apiKey: config.apiKey,
   ...(config.apiKeys ? { apiKeys: config.apiKeys } : {}),
   maxFileSize: parseLimit(String(config.maxFileSizeBytes)),
+  ...(config.maxStorageBytesPerPrincipal > 0 ? { quotaBytesPerPrincipal: config.maxStorageBytesPerPrincipal } : {}),
   allowedMimeTypes: config.allowedMimeTypes,
   rateLimitMax: config.rateLimitMax,
   metrics,
