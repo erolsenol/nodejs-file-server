@@ -12,6 +12,7 @@ Before exposing the starter to real traffic:
 - Add application-level authorization if more than one user or tenant uses the service.
 - For S3-compatible storage, prefer workload identity/instance roles over long-lived access keys; use `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE=true` for local MinIO.
 - Ship logs to a protected sink and avoid logging API keys, file contents, or sensitive filenames.
+- Configure the `NPM_TOKEN` repository secret before enabling automated npm publication; without it, Changesets versions packages and creates the release PR but intentionally skips registry publication.
 - Scrape `/metrics` from a private network and alert on elevated 5xx rate, latency, upload failures, and storage readiness failures.
 - Run `pnpm install --frozen-lockfile`, `pnpm audit --audit-level=high`, and `pnpm check` in CI.
 - Build the Docker image with the included `docker/Dockerfile`, scan it for high/critical vulnerabilities, and publish only immutable semver tags.
