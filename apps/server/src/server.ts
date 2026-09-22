@@ -2,12 +2,15 @@ import 'dotenv/config';
 import { join } from 'node:path';
 import { createApp, parseLimit } from '@file-server/http-fastify';
 import { JsonFileRepository } from '@file-server/repository-json';
+import { SqliteFileRepository } from '@file-server/repository-sqlite';
 import { LocalFileStorage } from '@file-server/storage-local';
 import { loadConfig } from './config.js';
 
 const config = loadConfig();
 const { dataDir } = config;
-const repository = new JsonFileRepository(join(dataDir, 'files.json'));
+const repository = config.metadataDriver === 'sqlite'
+  ? new SqliteFileRepository(join(dataDir, 'metadata.db'))
+  : new JsonFileRepository(join(dataDir, 'files.json'));
 await repository.load();
 const storage = new LocalFileStorage(join(dataDir, 'objects'));
 const app = createApp({

@@ -4,7 +4,7 @@ Before exposing the starter to real traffic:
 
 - Set `NODE_ENV=production` and a randomly generated `API_KEY` of at least 16 characters.
 - Put the service behind TLS and a reverse proxy with request and connection timeouts.
-- Mount `.data` on durable storage or replace the local adapter with an S3-compatible adapter.
+- Mount `.data` on durable storage. The starter uses SQLite metadata by default; replace the storage adapter with S3-compatible object storage for multi-instance deployments.
 - Back up metadata and objects together; test restore before launch.
 - Set a narrow `ALLOWED_MIME_TYPES`, an explicit `MAX_FILE_SIZE_BYTES`, and an appropriate `RATE_LIMIT_MAX`.
 - Add application-level authorization if more than one user or tenant uses the service.
