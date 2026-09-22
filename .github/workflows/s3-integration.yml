@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       minio:
-        image: quay.io/minio/minio:RELEASE.2025-09-06T17-38-46Z
+        image: quay.io/minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
         env:
           MINIO_ROOT_USER: minioadmin
           MINIO_ROOT_PASSWORD: minioadmin
