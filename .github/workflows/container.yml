@@ -22,6 +22,43 @@ jobs:
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Run container smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          api_key='ci-smoke-api-key-change-me-123456'
+          container_name='file-server-ci-smoke'
+          fixture='/tmp/file-server-ci-smoke.txt'
+          download='/tmp/file-server-ci-smoke-download.txt'
+          printf 'container smoke test\n' > "$fixture"
+          cleanup() {
+            docker rm -f "$container_name" >/dev/null 2>&1 || true
+            rm -f "$fixture" "$download"
+          }
+          trap cleanup EXIT
+          docker run --detach --name "$container_name" --publish 3000:3000 \
+            --env API_KEY="$api_key" \
+            --env DATA_DIR=/app/.data \
+            file-server:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/health/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" = 30 ]; then
+              docker logs "$container_name"
+              exit 1
+            fi
+            sleep 1
+          done
+          upload_response=$(curl --fail --silent --request POST http://127.0.0.1:3000/v1/files \
+            --header "x-api-key: $api_key" \
+            --form "file=@$fixture;type=text/plain")
+          file_id=$(printf '%s' "$upload_response" | jq --exit-status --raw-output '.id')
+          curl --fail --silent --header "x-api-key: $api_key" \
+            "http://127.0.0.1:3000/v1/files/$file_id/content" > "$download"
+          cmp "$fixture" "$download"
+          curl --fail --silent --request DELETE --header "x-api-key: $api_key" \
+            "http://127.0.0.1:3000/v1/files/$file_id"
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: file-server:ci
