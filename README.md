@@ -1,0 +1,43 @@
+# Node.js File Server
+
+Open-source, modular Node.js file server and production starter kit. It provides a secure HTTP API for file upload, metadata, streaming download, range requests, and deletion while keeping domain contracts independent from the HTTP framework and storage implementation.
+
+## Packages
+
+- `@file-server/core` — framework-agnostic domain contracts and typed errors.
+- `@file-server/storage-local` — atomic local filesystem storage with SHA-256 checksums.
+- `@file-server/http-fastify` — Fastify routes, auth, validation, request IDs, and OpenAPI.
+- `@file-server/app` — production-oriented starter application.
+
+## Quick start
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+The API is available at `http://localhost:3000`; Swagger UI is at `/documentation`.
+
+```bash
+curl -X POST http://localhost:3000/v1/files \
+  -H 'x-api-key: change-me-in-production' \
+  -F 'file=@README.md'
+```
+
+## API
+
+`POST /v1/files`, `GET /v1/files`, `GET /v1/files/:id`, `GET /v1/files/:id/content`, and `DELETE /v1/files/:id` are authenticated with `x-api-key`. Health endpoints are public: `/health/live` and `/health/ready`.
+
+## Production notes
+
+The local adapter is intentionally replaceable. For production at scale, implement the `FileStorage` contract with S3-compatible object storage and use a durable metadata repository. Put the service behind TLS, rotate API keys, configure a non-public data volume, and set an explicit MIME/size policy.
+
+## Development
+
+```bash
+pnpm check
+pnpm format
+```
+
+Licensed under MIT. Contributions are welcome.

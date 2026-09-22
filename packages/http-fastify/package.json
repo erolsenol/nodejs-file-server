@@ -1,0 +1,16 @@
+{
+  "name": "@file-server/http-fastify",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/swagger": "^9.0.0",
+    "@fastify/swagger-ui": "^5.0.0",
+    "@file-server/core": "workspace:*",
+    "fastify": "^5.0.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.23.0"
+  }
+}
