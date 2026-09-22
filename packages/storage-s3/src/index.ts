@@ -8,15 +8,32 @@ import type { FileStorage } from '@file-server/core';
 export interface S3StorageOptions {
   readonly bucket: string;
   readonly client: S3Client;
+  readonly upload?: S3Upload;
 }
+
+export interface S3UploadInput {
+  readonly client: S3Client;
+  readonly bucket: string;
+  readonly key: string;
+  readonly body: Readable;
+}
+
+export type S3Upload = (input: S3UploadInput) => Promise<void>;
+
+const defaultUpload: S3Upload = async ({ client, bucket, key, body }) => {
+  const upload = new Upload({ client, params: { Bucket: bucket, Key: key, Body: body }, partSize: 8 * 1024 * 1024, queueSize: 2 });
+  await upload.done();
+};
 
 export class S3FileStorage implements FileStorage {
   private readonly bucket: string;
   private readonly client: S3Client;
+  private readonly upload: S3Upload;
 
   public constructor(options: S3StorageOptions) {
     this.bucket = options.bucket;
     this.client = options.client;
+    this.upload = options.upload ?? defaultUpload;
   }
 
   public async put(input: NodeJS.ReadableStream, key: string): Promise<{ size: number; checksum: string }> {
@@ -30,8 +47,7 @@ export class S3FileStorage implements FileStorage {
         callback(null, chunk);
       },
     });
-    const upload = new Upload({ client: this.client, params: { Bucket: this.bucket, Key: key, Body: passThrough }, partSize: 8 * 1024 * 1024, queueSize: 2 });
-    await Promise.all([pipeline(input, measured, passThrough), upload.done()]);
+    await Promise.all([pipeline(input, measured, passThrough), this.upload({ client: this.client, bucket: this.bucket, key, body: passThrough })]);
     return { size, checksum: `sha256:${hash.digest('hex')}` };
   }
 
