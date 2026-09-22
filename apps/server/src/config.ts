@@ -6,6 +6,13 @@ const configSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATA_DIR: z.string().min(1).default('.data'),
   METADATA_DRIVER: z.enum(['sqlite', 'json']).default('sqlite'),
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
   API_KEY: z.string().min(16).default('development-only-change-me'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   ALLOWED_MIME_TYPES: z.string().default('application/pdf,image/jpeg,image/png,text/plain,application/zip'),
@@ -18,6 +25,13 @@ export interface AppConfig {
   readonly port: number;
   readonly dataDir: string;
   readonly metadataDriver: 'sqlite' | 'json';
+  readonly storageDriver: 'local' | 's3';
+  readonly s3Bucket: string | undefined;
+  readonly s3Region: string;
+  readonly s3Endpoint: string | undefined;
+  readonly s3ForcePathStyle: boolean;
+  readonly s3AccessKeyId: string | undefined;
+  readonly s3SecretAccessKey: string | undefined;
   readonly apiKey: string;
   readonly maxFileSizeBytes: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
@@ -35,6 +49,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: parsed.PORT,
     dataDir: parsed.DATA_DIR,
     metadataDriver: parsed.METADATA_DRIVER,
+    storageDriver: parsed.STORAGE_DRIVER,
+    s3Bucket: parsed.S3_BUCKET,
+    s3Region: parsed.S3_REGION,
+    s3Endpoint: parsed.S3_ENDPOINT,
+    s3ForcePathStyle: parsed.S3_FORCE_PATH_STYLE,
+    s3AccessKeyId: parsed.S3_ACCESS_KEY_ID,
+    s3SecretAccessKey: parsed.S3_SECRET_ACCESS_KEY,
     apiKey: parsed.API_KEY,
     maxFileSizeBytes: parsed.MAX_FILE_SIZE_BYTES,
     allowedMimeTypes: new Set(parsed.ALLOWED_MIME_TYPES.split(',').map((value) => value.trim()).filter(Boolean)),
