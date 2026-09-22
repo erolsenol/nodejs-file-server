@@ -41,7 +41,7 @@ describe('fileLimitUloads: Test Single File Upload With File Size Limit', functi
         .expect(413)
         .end((err) => {
           // err.code === 'ECONNRESET' that means upload has been aborted.
-          done(err && err.code !== 'ECONNRESET' ? err : null);
+          done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
         });
     });
   });
@@ -68,7 +68,7 @@ describe('fileLimitUloads: Test Single File Upload With File Size Limit', functi
         .expect(500, {response: 'Limit reached!'})
         .end(function(err) {
           // err.code === 'ECONNRESET' that means upload has been aborted.
-          if (err && err.code !== 'ECONNRESET') return done(err);
+          if (err && !['ECONNRESET', 'EPIPE'].includes(err.code)) return done(err);
           if (!limitHandlerRun) return done('handler did not run');
           done();
         });

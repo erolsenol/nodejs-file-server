@@ -1,137 +1,131 @@
+'use strict';
+
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
 const hpp = require('hpp');
-const path = require('path');
-const fs = require('fs');
 require('dotenv').config();
 
-const { createFolder } = require('../lib/helper');
 const fileUpload = require('../lib/index');
+const {
+  deleteStoredFile,
+  ensureStorageDirectory,
+  resolveStoragePath,
+  saveUploadedFile
+} = require('./storage');
+
 const app = express();
+const port = Number(process.env.PORT || 3000);
+const storageDirectory = path.resolve(__dirname, process.env.WRITE_PATH || './uploads');
 
-const PORT = process.env.PORT;
-const PRODUCTION = process.env.NODE_ENV == "production";
-const WRITE_PATH = process.env.WRITE_PATH;
-
-app.use(cors());
-app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(fileUpload());
-app.use(hpp());
-
-const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  limit: 300, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-  standardHeaders: 'RateLimit',
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
-  // store: ... , // Redis, Memcached, etc. See below.
-});
-app.use(limiter);
 app.disable('x-powered-by');
+app.use(cors({ origin: process.env.CORS_ORIGIN || false }));
+app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(hpp());
+app.use(rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false
+}));
+app.use(fileUpload({
+  limits: {
+    fileSize: Number(process.env.MAX_FILE_SIZE || 10 * 1024 * 1024),
+    files: 1
+  },
+  abortOnLimit: true,
+  safeFileNames: true,
+  preserveExtension: true
+}));
 
-app.use('/form', express.static(__dirname + '/index.html'));
-
-app.get('/ping', function (req, res) {
-  res.send('pong');
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
 });
-app.get('/', function (req, res) {
-  res.send('ok');
+
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'nodejs-file-server',
+    endpoints: ['POST /upload', 'GET /files/:path', 'DELETE /files/:path']
+  });
 });
 
-app.post('/upload', async function (req, res) {
+app.post('/upload', async (req, res, next) => {
   try {
-    let file;
-    let uploadPath;
-    let { savepath = '' } = req.query;
-
-    if (!req.files || Object.keys(req.files).length === 0) {
-      res.status(400).send('No files were uploaded.');
-      return;
+    const uploadedFile = req.files && req.files.file;
+    if (!uploadedFile) {
+      return res.status(400).json({ error: 'file_required' });
     }
 
-    file = req.files.file;
-    uploadPath = path.resolve(__dirname, WRITE_PATH + savepath + file.name);
+    const requestedPath = typeof req.query.path === 'string'
+      ? req.query.path
+      : uploadedFile.name;
+    const destinationPath = await saveUploadedFile(uploadedFile, storageDirectory, requestedPath);
 
-    const fileCheck = fs.existsSync(uploadPath);
-    if (fileCheck) {
-      return res.status(400).json({
-        success: false,
-        message: 'file_already_exists',
-      });
-    }
-
-    await createFolder(uploadPath);
-    file.mv(uploadPath, function (err) {
-      if (err) {
-        console.log('err', err);
-        return res.status(500).send(err);
-      }
-      fs.chmodSync(uploadPath, '755');
-      res.json({
-        success: true,
-        path: uploadPath,
-        message: 'file_uploaded',
-      });
+    return res.status(201).json({
+      name: path.basename(destinationPath),
+      path: path.relative(storageDirectory, destinationPath),
+      size: uploadedFile.size,
+      mimetype: uploadedFile.mimetype
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error,
-    });
+    if (error && error.code === 'PATH_OUTSIDE_STORAGE') {
+      return res.status(400).json({ error: 'invalid_file_path' });
+    }
+    if (error && error.code === 'EEXIST') {
+      return res.status(409).json({ error: 'file_already_exists' });
+    }
+    return next(error);
   }
 });
 
-app.delete('/delete', async function (req, res) {
+app.get('/files/*', async (req, res, next) => {
   try {
-    let { filePath = '' } = req.query;
-
-    deletePath = path.resolve(__dirname, WRITE_PATH + filePath);
-
-    const fileCheck = fs.existsSync(deletePath);
-    if (!fileCheck) {
-      return res.status(400).json({
-        success: false,
-        message: 'file_not_found',
-      });
+    const requestedPath = decodeURIComponent(req.params[0]);
+    const filePath = resolveStoragePath(storageDirectory, requestedPath);
+    return res.sendFile(filePath);
+  } catch (error) {
+    if (error && error.code === 'PATH_OUTSIDE_STORAGE') {
+      return res.status(400).json({ error: 'invalid_file_path' });
     }
-
-    fs.access(deletePath, fs.constants.F_OK, async (err) => {
-      if (err) {
-        console.log('err', err);
-        res.status(400).json({ success: false, message: err });
-      } else {
-        await fs.unlinkSync(deletePath);
-        res.json({ success: true });
-      }
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error,
-    });
+    return next(error);
   }
 });
 
-app.get('/images/*', function (req, res) {
+app.delete('/files/*', async (req, res, next) => {
   try {
-    const filePath = req.path.replace('/images/', '');
-    const decodeFilePath = decodeURIComponent(filePath);
-
-    const fileDirectory = path.resolve(__dirname, WRITE_PATH + decodeFilePath);
-
-    var data = fs.readFileSync(fileDirectory);
-    res.contentType('image/jpeg');
-    res.send(data);
+    await deleteStoredFile(storageDirectory, decodeURIComponent(req.params[0]));
+    return res.status(204).send();
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error,
-    });
+    if (error && error.code === 'PATH_OUTSIDE_STORAGE') {
+      return res.status(400).json({ error: 'invalid_file_path' });
+    }
+    if (error && error.code === 'ENOENT') {
+      return res.status(404).json({ error: 'file_not_found' });
+    }
+    return next(error);
   }
 });
 
-app.listen(PORT, function () {
-  console.log('Express server listening on port ', PORT); // eslint-disable-line
+app.use((error, _req, res, _next) => { // eslint-disable-line no-unused-vars
+  if (res.headersSent) return;
+  console.error(error); // eslint-disable-line no-console
+  res.status(500).json({ error: 'internal_server_error' });
 });
 
+const start = async () => {
+  await ensureStorageDirectory(storageDirectory);
+  return app.listen(port, () => {
+    console.log(`nodejs-file-server listening on port ${port}`); // eslint-disable-line no-console
+  });
+};
+
+if (require.main === module) {
+  start().catch((error) => {
+    console.error(error); // eslint-disable-line no-console
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { app, start, storageDirectory };

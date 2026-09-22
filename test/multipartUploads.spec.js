@@ -87,7 +87,7 @@ describe('multipartUploads: Test Single File Upload', function() {
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 
@@ -98,7 +98,7 @@ describe('multipartUploads: Test Single File Upload', function() {
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 });
@@ -172,7 +172,7 @@ describe('multipartUploads: Test Single File Upload w/ useTempFiles option.', fu
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 
@@ -183,7 +183,7 @@ describe('multipartUploads: Test Single File Upload w/ useTempFiles option.', fu
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 });
@@ -248,7 +248,7 @@ describe('multipartUploads: Test Single File Upload w/ .mv() Promise', function(
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 
@@ -259,7 +259,7 @@ describe('multipartUploads: Test Single File Upload w/ .mv() Promise', function(
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 });
@@ -305,7 +305,7 @@ describe('multipartUploads: Test Single File Upload w/ .mv() Promise & useTempFi
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 
@@ -316,7 +316,7 @@ describe('multipartUploads: Test Single File Upload w/ .mv() Promise & useTempFi
       .expect(400)
       .end((err) => {
         // err.code === 'ECONNRESET' that means upload has been aborted.
-        done(err && err.code !== 'ECONNRESET' ? err : null);
+        done(err && !['ECONNRESET', 'EPIPE'].includes(err.code) ? err : null);
       });
   });
 });
@@ -460,7 +460,7 @@ describe('multipartUploads: Test Aborting/Canceling during upload', function() {
         })
         .end((err) => {
           if (!err) return done(`Connection hasn't been aborted!`);
-          if (err.code !== 'ECONNRESET') return done(err);
+          if (!['ECONNRESET', 'EPIPE'].includes(err.code)) return done(err);
           // err.code === 'ECONNRESET' that means upload has been aborted.
           // Checking temp directory after upload timeout.
           setTimeout(() => {

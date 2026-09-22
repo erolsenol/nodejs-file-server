@@ -22,8 +22,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: "9000",
-        WRITE_PATH: "../../uploads/",
-      },
-    },
-  ],
-}
+        WRITE_PATH: "../../uploads/"
+      }
+    }
+  ]
+};
