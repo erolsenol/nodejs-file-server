@@ -48,4 +48,10 @@ export class JsonFileRepository implements FileRepository {
     if (record && (!ownerId || record.ownerId === ownerId)) this.records.delete(id);
     await this.persist();
   }
+
+  public async totalSize(ownerId?: string): Promise<number> {
+    return [...this.records.values()]
+      .filter((record) => !ownerId || record.ownerId === ownerId)
+      .reduce((total, record) => total + record.size, 0);
+  }
 }

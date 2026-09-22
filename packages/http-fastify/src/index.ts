@@ -17,6 +17,7 @@ export interface HttpOptions {
   readonly storage: FileStorage;
   readonly repository: FileRepository;
   readonly rateLimitMax?: number;
+  readonly quotaBytesPerPrincipal?: number;
   readonly metrics?: FileServerMetrics;
 }
 
@@ -52,6 +53,7 @@ const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g,
 
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
+  const quotaBytesPerPrincipal = options.quotaBytesPerPrincipal;
   const startTimes = new WeakMap<object, bigint>();
   app.addHook('onRequest', async (request) => { startTimes.set(request, process.hrtime.bigint()); });
   app.addHook('onResponse', async (request, reply) => {
@@ -108,6 +110,13 @@ export function createApp(options: HttpOptions): FastifyInstance {
     const id = ulid();
     const stored = await options.storage.put(part.file, id);
     if (part.file.truncated) { await options.storage.delete(id); throw new FileServerError('LIMIT_EXCEEDED', 'File is too large', 413); }
+    if (quotaBytesPerPrincipal !== undefined) {
+      const currentUsage = options.repository.totalSize ? await options.repository.totalSize(principal.id) : 0;
+      if (currentUsage + stored.size > quotaBytesPerPrincipal) {
+        await options.storage.delete(id);
+        throw new FileServerError('LIMIT_EXCEEDED', 'Storage quota exceeded', 413);
+      }
+    }
     const record = { id, ownerId: principal.id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
     await options.repository.create(record);
     options.metrics?.uploadsTotal.inc({ status: 'success' });

@@ -17,6 +17,7 @@ describe('SqliteFileRepository', () => {
     await repository.create(record);
     expect(await repository.findById(record.id)).toEqual(record);
     expect(await repository.list(10, 0)).toEqual([record]);
+    expect(await repository.totalSize(record.ownerId)).toBe(record.size);
     repository.close();
   });
 
