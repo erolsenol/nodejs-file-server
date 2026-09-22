@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.base.json .prettierrc eslint.config.mjs ./
@@ -6,7 +6,7 @@ COPY packages ./packages
 COPY apps ./apps
 RUN pnpm install --frozen-lockfile && pnpm build
 
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 RUN corepack enable
