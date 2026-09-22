@@ -6,6 +6,10 @@ Open-source, modular Node.js file server and production starter kit. It provides
 
 - `@file-server/core` — framework-agnostic domain contracts and typed errors.
 - `@file-server/storage-local` — atomic local filesystem storage with SHA-256 checksums.
+- `@file-server/storage-s3` — AWS S3-compatible object storage adapter for S3, MinIO, R2, and compatible providers.
+- `@file-server/repository-json` — atomic JSON metadata repository for single-instance starter deployments.
+- `@file-server/repository-sqlite` — portable SQLite metadata repository for starter deployments.
+- `@file-server/retention` — configurable object and metadata retention cleanup.
 - `@file-server/http-fastify` — Fastify routes, auth, validation, request IDs, and OpenAPI.
 - `@file-server/app` — production-oriented starter application.
 
@@ -41,7 +45,7 @@ For production, set `NODE_ENV=production` and provide an `API_KEY` with at least
 
 The local adapter is intentionally replaceable. For production at scale, implement the `FileStorage` contract with S3-compatible object storage and use a durable metadata repository. Put the service behind TLS, rotate API keys, configure a non-public data volume, and set an explicit MIME/size policy.
 
-The published `@file-server/storage-s3` adapter supports AWS S3 and compatible endpoints such as MinIO and R2. Configure `STORAGE_DRIVER=s3`, `S3_BUCKET`, and `S3_REGION`; credentials use the AWS SDK default provider chain unless explicit credentials are supplied.
+The included `@file-server/storage-s3` adapter supports AWS S3 and compatible endpoints such as MinIO and R2. Configure `STORAGE_DRIVER=s3`, `S3_BUCKET`, and `S3_REGION`; credentials use the AWS SDK default provider chain unless explicit credentials are supplied. npm publication is planned; packages are currently consumed from this monorepo.
 
 See [`docs/production.md`](docs/production.md) for the launch checklist and [`SECURITY.md`](SECURITY.md) for vulnerability reporting.
 

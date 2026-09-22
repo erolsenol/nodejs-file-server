@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { PassThrough, Transform, Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { HeadBucketCommand, GetObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { HeadBucketCommand, HeadObjectCommand, GetObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import type { FileStorage } from '@file-server/core';
 
@@ -64,7 +64,7 @@ export class S3FileStorage implements FileStorage {
 
   public async exists(key: string): Promise<boolean> {
     try {
-      await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key, Range: 'bytes=0-0' }));
+      await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
       return true;
     } catch (error) {
       if ((error as { name?: string }).name === 'NoSuchKey' || (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return false;

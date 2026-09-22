@@ -18,3 +18,5 @@ Before exposing the starter to real traffic:
 - Treat `/health/live` as process health and `/health/ready` as storage readiness; do not use either as an authorization bypass.
 
 The local JSON metadata repository is intentionally a starter implementation. It uses atomic replacement and serialized writes, but a multi-instance deployment requires a shared durable repository.
+
+The in-process quota reservation and retention scheduler are safe for a single application instance. For multiple replicas, move quota accounting and retention coordination to a shared database/lock provider before enabling them as global policies.

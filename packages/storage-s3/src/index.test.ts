@@ -33,6 +33,14 @@ describe('S3FileStorage', () => {
     await expect(storage.exists('missing')).resolves.toBe(false);
   });
 
+  it('checks object existence with a metadata request', async () => {
+    const calls: unknown[] = [];
+    const client = { send: async (command: { input: unknown }) => { calls.push(command.input); return {}; } };
+    const storage = new S3FileStorage({ bucket: 'files', client: client as never });
+    await expect(storage.exists('file-1')).resolves.toBe(true);
+    expect(calls).toEqual([{ Bucket: 'files', Key: 'file-1' }]);
+  });
+
   it('supports readiness and idempotent delete commands', async () => {
     const calls: unknown[] = [];
     const client = { send: async (command: { input: unknown }) => { calls.push(command.input); return {}; } };
