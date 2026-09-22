@@ -7,6 +7,8 @@ Before exposing the starter to real traffic:
 - The starter uses SQLite metadata by default. Set `STORAGE_DRIVER=s3` and configure `S3_BUCKET` for AWS S3, MinIO, R2, or another S3-compatible object store in multi-instance deployments.
 - Back up metadata and objects together; test restore before launch.
 - Set a narrow `ALLOWED_MIME_TYPES`, an explicit `MAX_FILE_SIZE_BYTES`, and an appropriate `RATE_LIMIT_MAX`.
+- Set `MAX_STORAGE_BYTES_PER_PRINCIPAL` for a per-tenant storage ceiling. Set `RETENTION_MAX_AGE_SECONDS` only after confirming the deletion policy; `RETENTION_INTERVAL_SECONDS` controls the cleanup cadence.
+- Retention deletes the object before metadata. Monitor the cleanup result logs and keep backups until restore testing confirms the policy is safe.
 - Add application-level authorization if more than one user or tenant uses the service.
 - For S3-compatible storage, prefer workload identity/instance roles over long-lived access keys; use `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE=true` for local MinIO.
 - Ship logs to a protected sink and avoid logging API keys, file contents, or sensitive filenames.

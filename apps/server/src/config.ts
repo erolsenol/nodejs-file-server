@@ -17,6 +17,8 @@ const configSchema = z.object({
   API_KEYS: z.string().optional(),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   MAX_STORAGE_BYTES_PER_PRINCIPAL: z.coerce.number().int().nonnegative().default(0),
+  RETENTION_MAX_AGE_SECONDS: z.coerce.number().int().nonnegative().default(0),
+  RETENTION_INTERVAL_SECONDS: z.coerce.number().int().positive().default(3600),
   ALLOWED_MIME_TYPES: z.string().default('application/pdf,image/jpeg,image/png,text/plain,application/zip'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
 });
@@ -38,6 +40,8 @@ export interface AppConfig {
   readonly apiKeys: ReadonlyMap<string, string> | undefined;
   readonly maxFileSizeBytes: number;
   readonly maxStorageBytesPerPrincipal: number;
+  readonly retentionMaxAgeSeconds: number;
+  readonly retentionIntervalSeconds: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
   readonly rateLimitMax: number;
 }
@@ -69,6 +73,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiKeys,
     maxFileSizeBytes: parsed.MAX_FILE_SIZE_BYTES,
     maxStorageBytesPerPrincipal: parsed.MAX_STORAGE_BYTES_PER_PRINCIPAL,
+    retentionMaxAgeSeconds: parsed.RETENTION_MAX_AGE_SECONDS,
+    retentionIntervalSeconds: parsed.RETENTION_INTERVAL_SECONDS,
     allowedMimeTypes: new Set(parsed.ALLOWED_MIME_TYPES.split(',').map((value) => value.trim()).filter(Boolean)),
     rateLimitMax: parsed.RATE_LIMIT_MAX,
   };

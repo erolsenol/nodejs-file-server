@@ -23,6 +23,8 @@ The machine-readable OpenAPI document is available at `/documentation/json`. Pro
 
 Prometheus-compatible metrics are available at `/metrics` and require the same API key. They include request totals, latency histograms, and successful upload counts.
 
+Per-principal quotas are disabled by default. Set `MAX_STORAGE_BYTES_PER_PRINCIPAL` to a positive byte value to enforce a tenant quota. Retention is also disabled by default; set `RETENTION_MAX_AGE_SECONDS` and optionally `RETENTION_INTERVAL_SECONDS` to enable periodic cleanup of expired files.
+
 ```bash
 curl -X POST http://localhost:3000/v1/files \
   -H 'x-api-key: change-me-in-production' \
