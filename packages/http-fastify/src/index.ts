@@ -3,6 +3,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FileRepository, FileStorage } from '@file-server/core';
 import { FileServerError } from '@file-server/core';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -50,6 +51,7 @@ const parseRange = (header: string | undefined, size: number): ByteRange | null 
 };
 
 const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g, '_').replace(/[\\"]/g, '_');
+const equalSecret = (left: string, right: string): boolean => timingSafeEqual(createHash('sha256').update(left).digest(), createHash('sha256').update(right).digest());
 
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
@@ -88,8 +90,8 @@ export function createApp(options: HttpOptions): FastifyInstance {
     const presented = request.headers['x-api-key'];
     if (typeof presented !== 'string') throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
     if (options.apiKeys) {
-      for (const [id, secret] of options.apiKeys) if (secret === presented) return { id };
-    } else if (presented === options.apiKey) return { id: 'default' };
+      for (const [id, secret] of options.apiKeys) if (equalSecret(secret, presented)) return { id };
+    } else if (equalSecret(options.apiKey, presented)) return { id: 'default' };
     throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
   };
 

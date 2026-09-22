@@ -17,6 +17,10 @@ describe('loadConfig', () => {
     expect(config.apiKeys).toEqual(new Map([['team-a', 'secret-a'], ['team-b', 'secret-b']]));
   });
 
+  it('rejects duplicate scoped API key principals', () => {
+    expect(() => loadConfig({ API_KEYS: 'team-a:secret-a,team-a:secret-b' })).toThrow('Duplicate API_KEYS principal: team-a');
+  });
+
   it('keeps quota and retention disabled by default and parses explicit values', () => {
     expect(loadConfig({ MAX_STORAGE_BYTES_PER_PRINCIPAL: '1024', RETENTION_MAX_AGE_SECONDS: '86400', RETENTION_INTERVAL_SECONDS: '300' })).toMatchObject({
       maxStorageBytesPerPrincipal: 1024,
