@@ -8,6 +8,7 @@ const configSchema = z.object({
   API_KEY: z.string().min(16).default('development-only-change-me'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   ALLOWED_MIME_TYPES: z.string().default('application/pdf,image/jpeg,image/png,text/plain,application/zip'),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
 });
 
 export interface AppConfig {
@@ -18,6 +19,7 @@ export interface AppConfig {
   readonly apiKey: string;
   readonly maxFileSizeBytes: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
+  readonly rateLimitMax: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -33,5 +35,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     apiKey: parsed.API_KEY,
     maxFileSizeBytes: parsed.MAX_FILE_SIZE_BYTES,
     allowedMimeTypes: new Set(parsed.ALLOWED_MIME_TYPES.split(',').map((value) => value.trim()).filter(Boolean)),
+    rateLimitMax: parsed.RATE_LIMIT_MAX,
   };
 }
