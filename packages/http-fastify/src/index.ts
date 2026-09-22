@@ -11,6 +11,7 @@ import type { FileServerMetrics } from './metrics.js';
 
 export interface HttpOptions {
   readonly apiKey: string;
+  readonly apiKeys?: ReadonlyMap<string, string>;
   readonly maxFileSize: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
   readonly storage: FileStorage;
@@ -23,6 +24,14 @@ interface ByteRange {
   readonly start: number;
   readonly end: number;
 }
+
+interface Principal { readonly id: string }
+type PublicFileRecord = Omit<import('@file-server/core').FileRecord, 'ownerId'>;
+const toPublicRecord = (record: import('@file-server/core').FileRecord): PublicFileRecord => {
+  const { ownerId, ...publicRecord } = record;
+  void ownerId;
+  return publicRecord;
+};
 
 const parseLimit = (value: string | undefined): number => {
   const parsed = Number(value ?? String(50 * 1024 * 1024));
@@ -72,8 +81,13 @@ export function createApp(options: HttpOptions): FastifyInstance {
     return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected server error' }, requestId: request.id });
   });
 
-  const authenticate = (request: { headers: Record<string, string | string[] | undefined> }) => {
-    if (request.headers['x-api-key'] !== options.apiKey) throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
+  const authenticate = (request: { headers: Record<string, string | string[] | undefined> }): Principal => {
+    const presented = request.headers['x-api-key'];
+    if (typeof presented !== 'string') throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
+    if (options.apiKeys) {
+      for (const [id, secret] of options.apiKeys) if (secret === presented) return { id };
+    } else if (presented === options.apiKey) return { id: 'default' };
+    throw new FileServerError('UNAUTHORIZED', 'Invalid API key', 401);
   };
 
   app.get('/metrics', async (request, reply) => {
@@ -87,31 +101,31 @@ export function createApp(options: HttpOptions): FastifyInstance {
   app.get('/health/ready', async (_request, reply) => { await options.storage.check(); return reply.send({ status: 'ok' }); });
 
   app.post('/v1/files', async (request, reply) => {
-    authenticate(request);
+    const principal = authenticate(request);
     const part = await request.file();
     if (!part) throw new FileServerError('INVALID_INPUT', 'A file is required', 400);
     if (!options.allowedMimeTypes.has(part.mimetype)) throw new FileServerError('INVALID_INPUT', 'MIME type is not allowed', 415);
     const id = ulid();
     const stored = await options.storage.put(part.file, id);
     if (part.file.truncated) { await options.storage.delete(id); throw new FileServerError('LIMIT_EXCEEDED', 'File is too large', 413); }
-    const record = { id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
+    const record = { id, ownerId: principal.id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
     await options.repository.create(record);
     options.metrics?.uploadsTotal.inc({ status: 'success' });
-    return reply.code(201).send(record);
+    return reply.code(201).send(toPublicRecord(record));
   });
 
   app.get('/v1/files', async (request) => {
-    authenticate(request);
+    const principal = authenticate(request);
     const query = request.query as { limit?: string; offset?: string };
     const limit = Math.min(Math.max(Number(query.limit ?? 50) || 50, 1), 100);
     const offset = Math.max(Number(query.offset ?? 0) || 0, 0);
-    return { data: await options.repository.list(limit, offset), limit, offset };
+    return { data: (await options.repository.list(limit, offset, principal.id)).map(toPublicRecord), limit, offset };
   });
 
-  app.get<{ Params: { id: string } }>('/v1/files/:id', async (request) => { authenticate(request); const record = await options.repository.findById(request.params.id); if (!record) throw new FileServerError('NOT_FOUND', 'File not found', 404); return record; });
+  app.get<{ Params: { id: string } }>('/v1/files/:id', async (request) => { const principal = authenticate(request); const record = await options.repository.findById(request.params.id, principal.id); if (!record) throw new FileServerError('NOT_FOUND', 'File not found', 404); return toPublicRecord(record); });
   app.get<{ Params: { id: string } }>('/v1/files/:id/content', async (request, reply) => {
-    authenticate(request);
-    const record = await options.repository.findById(request.params.id);
+    const principal = authenticate(request);
+    const record = await options.repository.findById(request.params.id, principal.id);
     if (!record || !(await options.storage.exists(request.params.id))) throw new FileServerError('NOT_FOUND', 'File not found', 404);
     const rangeHeader = typeof request.headers.range === 'string' ? request.headers.range : undefined;
     const range = parseRange(rangeHeader, record.size);
@@ -124,7 +138,7 @@ export function createApp(options: HttpOptions): FastifyInstance {
     reply.code(206).header('content-range', `bytes ${range.start}-${range.end}/${record.size}`).header('content-length', length);
     return options.storage.get(request.params.id, range);
   });
-  app.delete<{ Params: { id: string } }>('/v1/files/:id', async (request, reply) => { authenticate(request); const record = await options.repository.findById(request.params.id); if (!record) throw new FileServerError('NOT_FOUND', 'File not found', 404); await options.storage.delete(record.id); await options.repository.delete(record.id); return reply.code(204).send(); });
+  app.delete<{ Params: { id: string } }>('/v1/files/:id', async (request, reply) => { const principal = authenticate(request); const record = await options.repository.findById(request.params.id, principal.id); if (!record) throw new FileServerError('NOT_FOUND', 'File not found', 404); await options.storage.delete(record.id); await options.repository.delete(record.id, principal.id); return reply.code(204).send(); });
   return app;
 }
 

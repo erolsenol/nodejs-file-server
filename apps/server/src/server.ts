@@ -21,6 +21,7 @@ const storage = config.storageDriver === 's3'
 const metrics = createMetrics();
 const app = createApp({
   apiKey: config.apiKey,
+  ...(config.apiKeys ? { apiKeys: config.apiKeys } : {}),
   maxFileSize: parseLimit(String(config.maxFileSizeBytes)),
   allowedMimeTypes: config.allowedMimeTypes,
   rateLimitMax: config.rateLimitMax,

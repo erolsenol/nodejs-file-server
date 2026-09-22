@@ -25,18 +25,22 @@ export class SqliteFileRepository implements FileRepository {
     }
     database.run(`CREATE TABLE IF NOT EXISTS files (
       id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL DEFAULT 'default',
       name TEXT NOT NULL,
       mime_type TEXT NOT NULL,
       size INTEGER NOT NULL CHECK (size >= 0),
       checksum TEXT NOT NULL,
       created_at TEXT NOT NULL
-    ); CREATE INDEX IF NOT EXISTS files_created_at_idx ON files(created_at DESC);`);
+    );`);
+    try { database.run("ALTER TABLE files ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'default'"); } catch { /* already migrated */ }
+    database.run('CREATE INDEX IF NOT EXISTS files_created_at_idx ON files(created_at DESC)');
+    database.run('CREATE INDEX IF NOT EXISTS files_owner_id_idx ON files(owner_id)');
     return database;
   }
 
   public async create(record: FileRecord): Promise<void> {
     const database = await this.database;
-    database.run('INSERT INTO files (id, name, mime_type, size, checksum, created_at) VALUES (?, ?, ?, ?, ?, ?)', [record.id, record.name, record.mimeType, record.size, record.checksum, record.createdAt]);
+    database.run('INSERT INTO files (id, owner_id, name, mime_type, size, checksum, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', [record.id, record.ownerId, record.name, record.mimeType, record.size, record.checksum, record.createdAt]);
     await this.persist(database);
   }
 
@@ -44,20 +48,20 @@ export class SqliteFileRepository implements FileRepository {
     await this.database;
   }
 
-  public async list(limit: number, offset: number): Promise<readonly FileRecord[]> {
+  public async list(limit: number, offset: number, ownerId?: string): Promise<readonly FileRecord[]> {
     const database = await this.database;
-    return query(database, 'SELECT id, name, mime_type, size, checksum, created_at FROM files ORDER BY created_at DESC LIMIT ? OFFSET ?', [limit, offset]).map(toRecord);
+    return query(database, ownerId ? 'SELECT id, owner_id, name, mime_type, size, checksum, created_at FROM files WHERE owner_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?' : 'SELECT id, owner_id, name, mime_type, size, checksum, created_at FROM files ORDER BY created_at DESC LIMIT ? OFFSET ?', ownerId ? [ownerId, limit, offset] : [limit, offset]).map(toRecord);
   }
 
-  public async findById(id: string): Promise<FileRecord | null> {
-    const rows = query(await this.database, 'SELECT id, name, mime_type, size, checksum, created_at FROM files WHERE id = ?', [id]);
+  public async findById(id: string, ownerId?: string): Promise<FileRecord | null> {
+    const rows = query(await this.database, ownerId ? 'SELECT id, owner_id, name, mime_type, size, checksum, created_at FROM files WHERE id = ? AND owner_id = ?' : 'SELECT id, owner_id, name, mime_type, size, checksum, created_at FROM files WHERE id = ?', ownerId ? [id, ownerId] : [id]);
     const row = rows[0];
     return row ? toRecord(row) : null;
   }
 
-  public async delete(id: string): Promise<void> {
+  public async delete(id: string, ownerId?: string): Promise<void> {
     const database = await this.database;
-    database.run('DELETE FROM files WHERE id = ?', [id]);
+    database.run(ownerId ? 'DELETE FROM files WHERE id = ? AND owner_id = ?' : 'DELETE FROM files WHERE id = ?', ownerId ? [id, ownerId] : [id]);
     await this.persist(database);
   }
 
@@ -73,7 +77,7 @@ export class SqliteFileRepository implements FileRepository {
   }
 }
 
-interface SqliteRow { id: string; name: string; mime_type: string; size: number; checksum: string; created_at: string }
+interface SqliteRow { id: string; owner_id: string; name: string; mime_type: string; size: number; checksum: string; created_at: string }
 type SqlValue = string | number | null | Uint8Array;
 const query = (database: Database, sql: string, params: readonly SqlValue[]): SqliteRow[] => {
   const statement = database.prepare(sql);
@@ -83,4 +87,4 @@ const query = (database: Database, sql: string, params: readonly SqlValue[]): Sq
   statement.free();
   return rows;
 };
-const toRecord = (row: SqliteRow): FileRecord => ({ id: String(row.id), name: String(row.name), mimeType: String(row.mime_type), size: Number(row.size), checksum: String(row.checksum), createdAt: String(row.created_at) });
+const toRecord = (row: SqliteRow): FileRecord => ({ id: String(row.id), ownerId: String(row.owner_id), name: String(row.name), mimeType: String(row.mime_type), size: Number(row.size), checksum: String(row.checksum), createdAt: String(row.created_at) });

@@ -1,6 +1,6 @@
 # API contract
 
-All `/v1/files` endpoints require `x-api-key`. File IDs are opaque server-generated identifiers; user-provided filenames are metadata only and never become storage paths.
+All `/v1/files` endpoints require `x-api-key`. Set `API_KEYS` as comma-separated `principalId:secret` entries to enable scoped access; legacy `API_KEY` remains the single-principal fallback. File IDs are opaque server-generated identifiers; user-provided filenames are metadata only and never become storage paths.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
