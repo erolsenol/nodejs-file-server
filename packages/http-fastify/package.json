@@ -1,9 +1,16 @@
 {
   "name": "@file-server/http-fastify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "scripts": { "build": "tsc -p tsconfig.json" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "dependencies": {
     "@fastify/helmet": "^13.0.0",
     "@fastify/multipart": "^9.0.0",
