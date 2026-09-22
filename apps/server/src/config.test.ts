@@ -16,4 +16,12 @@ describe('loadConfig', () => {
     const config = loadConfig({ API_KEYS: 'team-a:secret-a,team-b:secret-b' });
     expect(config.apiKeys).toEqual(new Map([['team-a', 'secret-a'], ['team-b', 'secret-b']]));
   });
+
+  it('keeps quota and retention disabled by default and parses explicit values', () => {
+    expect(loadConfig({ MAX_STORAGE_BYTES_PER_PRINCIPAL: '1024', RETENTION_MAX_AGE_SECONDS: '86400', RETENTION_INTERVAL_SECONDS: '300' })).toMatchObject({
+      maxStorageBytesPerPrincipal: 1024,
+      retentionMaxAgeSeconds: 86400,
+      retentionIntervalSeconds: 300,
+    });
+  });
 });

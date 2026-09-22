@@ -6,6 +6,7 @@ import { SqliteFileRepository } from '@file-server/repository-sqlite';
 import { LocalFileStorage } from '@file-server/storage-local';
 import { createS3Storage } from '@file-server/storage-s3';
 import { createMetrics } from '@file-server/http-fastify';
+import { runRetention } from '@file-server/retention';
 import { loadConfig } from './config.js';
 
 const config = loadConfig();
@@ -32,8 +33,24 @@ const app = createApp({
 });
 await app.listen({ host: config.host, port: config.port });
 
+let retentionTimer: NodeJS.Timeout | undefined;
+if (config.retentionMaxAgeSeconds > 0) {
+  const runCleanup = (): void => {
+    void runRetention(repository, storage, {
+      maxAgeMs: config.retentionMaxAgeSeconds * 1000,
+      onError: (record, error) => app.log.error({ error, fileId: record.id }, 'retention cleanup failed'),
+    })
+      .then((result) => app.log.info(result, 'retention cleanup completed'))
+      .catch((error: unknown) => app.log.error({ error }, 'retention scan failed'));
+  };
+  runCleanup();
+  retentionTimer = setInterval(runCleanup, config.retentionIntervalSeconds * 1000);
+  retentionTimer.unref();
+}
+
 const shutdown = async (signal: string): Promise<void> => {
   app.log.info({ signal }, 'shutting down');
+  if (retentionTimer) clearInterval(retentionTimer);
   await app.close();
   process.exit(0);
 };

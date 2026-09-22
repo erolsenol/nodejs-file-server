@@ -221,6 +221,9 @@ importers:
       '@file-server/repository-sqlite':
         specifier: workspace:*
         version: link:../../packages/repository-sqlite
+      '@file-server/retention':
+        specifier: workspace:*
+        version: link:../../packages/retention
       '@file-server/storage-local':
         specifier: workspace:*
         version: link:../../packages/storage-local
@@ -293,6 +296,12 @@ importers:
       '@types/sql.js':
         specifier: ^1.4.9
         version: 1.4.11
+
+  packages/retention:
+    dependencies:
+      '@file-server/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/storage-local:
     dependencies:
