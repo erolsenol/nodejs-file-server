@@ -35,6 +35,8 @@ For production, set `NODE_ENV=production` and provide an `API_KEY` with at least
 
 The local adapter is intentionally replaceable. For production at scale, implement the `FileStorage` contract with S3-compatible object storage and use a durable metadata repository. Put the service behind TLS, rotate API keys, configure a non-public data volume, and set an explicit MIME/size policy.
 
+See [`docs/production.md`](docs/production.md) for the launch checklist and [`SECURITY.md`](SECURITY.md) for vulnerability reporting.
+
 ## Development
 
 ```bash
