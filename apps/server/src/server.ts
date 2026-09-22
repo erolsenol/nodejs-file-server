@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { createApp, parseLimit } from '@file-server/http-fastify';
 import type { FileRecord, FileRepository } from '@file-server/core';
 import { LocalFileStorage } from '@file-server/storage-local';
+import { loadConfig } from './config.js';
 
 class JsonFileRepository implements FileRepository {
   private records = new Map<string, FileRecord>();
@@ -15,16 +17,16 @@ class JsonFileRepository implements FileRepository {
   public async delete(id: string): Promise<void> { this.records.delete(id); await this.persist(); }
 }
 
-const port = Number(process.env.PORT ?? 3000);
-const dataDir = process.env.DATA_DIR ?? '.data';
+const config = loadConfig();
+const { dataDir } = config;
 const repository = new JsonFileRepository(join(dataDir, 'files.json'));
 await repository.load();
 const storage = new LocalFileStorage(join(dataDir, 'objects'));
 const app = createApp({
-  apiKey: process.env.API_KEY ?? 'change-me-in-production',
-  maxFileSize: parseLimit(process.env.MAX_FILE_SIZE_BYTES),
-  allowedMimeTypes: new Set((process.env.ALLOWED_MIME_TYPES ?? 'application/octet-stream').split(',').map((value) => value.trim())),
+  apiKey: config.apiKey,
+  maxFileSize: parseLimit(String(config.maxFileSizeBytes)),
+  allowedMimeTypes: config.allowedMimeTypes,
   storage,
   repository,
 });
-await app.listen({ host: process.env.HOST ?? '0.0.0.0', port });
+await app.listen({ host: config.host, port: config.port });

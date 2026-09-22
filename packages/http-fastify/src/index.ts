@@ -14,10 +14,27 @@ export interface HttpOptions {
   readonly repository: FileRepository;
 }
 
+interface ByteRange {
+  readonly start: number;
+  readonly end: number;
+}
+
 const parseLimit = (value: string | undefined): number => {
   const parsed = Number(value ?? String(50 * 1024 * 1024));
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 50 * 1024 * 1024;
 };
+
+const parseRange = (header: string | undefined, size: number): ByteRange | null => {
+  if (!header) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header);
+  if (!match || (!match[1] && !match[2])) return null;
+  const start = match[1] ? Number(match[1]) : Math.max(size - Number(match[2]), 0);
+  const end = match[2] ? Number(match[2]) : size - 1;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= size) return null;
+  return { start, end: Math.min(end, size - 1) };
+};
+
+const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g, '_').replace(/[\\"]/g, '_');
 
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
@@ -64,8 +81,16 @@ export function createApp(options: HttpOptions): FastifyInstance {
     authenticate(request);
     const record = await options.repository.findById(request.params.id);
     if (!record || !(await options.storage.exists(request.params.id))) throw new FileServerError('NOT_FOUND', 'File not found', 404);
-    reply.type(record.mimeType).header('content-disposition', `attachment; filename="${record.name.replaceAll('"', '')}"`);
-    return options.storage.get(request.params.id);
+    const rangeHeader = typeof request.headers.range === 'string' ? request.headers.range : undefined;
+    const range = parseRange(rangeHeader, record.size);
+    if (rangeHeader && !range) return reply.code(416).header('content-range', `bytes */${record.size}`).send();
+    reply.type(record.mimeType)
+      .header('accept-ranges', 'bytes')
+      .header('content-disposition', `attachment; filename="${safeDownloadName(record.name)}"`);
+    if (!range) return options.storage.get(request.params.id);
+    const length = range.end - range.start + 1;
+    reply.code(206).header('content-range', `bytes ${range.start}-${range.end}/${record.size}`).header('content-length', length);
+    return options.storage.get(request.params.id, range);
   });
   app.delete<{ Params: { id: string } }>('/v1/files/:id', async (request, reply) => { authenticate(request); const record = await options.repository.findById(request.params.id); if (!record) throw new FileServerError('NOT_FOUND', 'File not found', 404); await options.storage.delete(record.id); await options.repository.delete(record.id); return reply.code(204).send(); });
   return app;

@@ -9,7 +9,7 @@ export interface FileRecord {
 
 export interface FileStorage {
   put(input: NodeJS.ReadableStream, key: string): Promise<{ size: number; checksum: string }>;
-  get(key: string): Promise<NodeJS.ReadableStream>;
+  get(key: string, range?: { readonly start: number; readonly end: number }): Promise<NodeJS.ReadableStream>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
   check(): Promise<void>;

@@ -25,6 +25,8 @@ curl -X POST http://localhost:3000/v1/files \
   -F 'file=@README.md'
 ```
 
+For production, set `NODE_ENV=production` and provide an `API_KEY` with at least 16 characters. The starter rejects the development fallback key in production. Downloads support HTTP byte ranges for resumable clients.
+
 ## API
 
 `POST /v1/files`, `GET /v1/files`, `GET /v1/files/:id`, `GET /v1/files/:id/content`, and `DELETE /v1/files/:id` are authenticated with `x-api-key`. Health endpoints are public: `/health/live` and `/health/ready`.
