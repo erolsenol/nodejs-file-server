@@ -38,8 +38,9 @@ export class LocalFileStorage implements FileStorage {
     }
   }
 
-  public get(key: string): Promise<NodeJS.ReadableStream> {
-    return Promise.resolve(createReadStream(this.pathFor(key)));
+  public get(key: string, range?: { readonly start: number; readonly end: number }): Promise<NodeJS.ReadableStream> {
+    const path = this.pathFor(key);
+    return Promise.resolve(createReadStream(path, range));
   }
 
   public async delete(key: string): Promise<void> {
