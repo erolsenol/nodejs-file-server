@@ -5,6 +5,7 @@ const configSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATA_DIR: z.string().min(1).default('.data'),
+  METADATA_DRIVER: z.enum(['sqlite', 'json']).default('sqlite'),
   API_KEY: z.string().min(16).default('development-only-change-me'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   ALLOWED_MIME_TYPES: z.string().default('application/pdf,image/jpeg,image/png,text/plain,application/zip'),
@@ -16,6 +17,7 @@ export interface AppConfig {
   readonly host: string;
   readonly port: number;
   readonly dataDir: string;
+  readonly metadataDriver: 'sqlite' | 'json';
   readonly apiKey: string;
   readonly maxFileSizeBytes: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
@@ -32,6 +34,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     host: parsed.HOST,
     port: parsed.PORT,
     dataDir: parsed.DATA_DIR,
+    metadataDriver: parsed.METADATA_DRIVER,
     apiKey: parsed.API_KEY,
     maxFileSizeBytes: parsed.MAX_FILE_SIZE_BYTES,
     allowedMimeTypes: new Set(parsed.ALLOWED_MIME_TYPES.split(',').map((value) => value.trim()).filter(Boolean)),
