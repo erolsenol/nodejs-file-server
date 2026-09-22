@@ -12,6 +12,7 @@ Before exposing the starter to real traffic:
 - Ship logs to a protected sink and avoid logging API keys, file contents, or sensitive filenames.
 - Scrape `/metrics` from a private network and alert on elevated 5xx rate, latency, upload failures, and storage readiness failures.
 - Run `pnpm install --frozen-lockfile`, `pnpm audit --audit-level=high`, and `pnpm check` in CI.
+- Build the Docker image with the included `docker/Dockerfile`, scan it for high/critical vulnerabilities, and publish only immutable semver tags.
 - Treat `/health/live` as process health and `/health/ready` as storage readiness; do not use either as an authorization bypass.
 
 The local JSON metadata repository is intentionally a starter implementation. It uses atomic replacement and serialized writes, but a multi-instance deployment requires a shared durable repository.
