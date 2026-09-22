@@ -44,7 +44,13 @@ export function createApp(options: HttpOptions): FastifyInstance {
   void app.register(multipart, { limits: { fileSize: options.maxFileSize, files: 1 } });
   void app.register(helmet, { global: true });
   void app.register(rateLimit, { max: options.rateLimitMax ?? 100, timeWindow: '1 minute' });
-  void app.register(swagger, { openapi: { info: { title: 'Node.js File Server', version: '0.1.0' } } });
+  void app.register(swagger, {
+    openapi: {
+      info: { title: 'Node.js File Server', version: '0.1.0' },
+      tags: [{ name: 'files', description: 'File metadata and content operations' }, { name: 'health', description: 'Service health probes' }],
+      components: { securitySchemes: { ApiKeyAuth: { type: 'apiKey', in: 'header', name: 'x-api-key' } } },
+    },
+  });
   void app.register(swaggerUi, { routePrefix: '/documentation' });
 
   app.setErrorHandler((error, request, reply) => {
