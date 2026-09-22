@@ -1,0 +1,15 @@
+# Production checklist
+
+Before exposing the starter to real traffic:
+
+- Set `NODE_ENV=production` and a randomly generated `API_KEY` of at least 16 characters.
+- Put the service behind TLS and a reverse proxy with request and connection timeouts.
+- Mount `.data` on durable storage or replace the local adapter with an S3-compatible adapter.
+- Back up metadata and objects together; test restore before launch.
+- Set a narrow `ALLOWED_MIME_TYPES`, an explicit `MAX_FILE_SIZE_BYTES`, and an appropriate `RATE_LIMIT_MAX`.
+- Add application-level authorization if more than one user or tenant uses the service.
+- Ship logs to a protected sink and avoid logging API keys, file contents, or sensitive filenames.
+- Run `pnpm install --frozen-lockfile`, `pnpm audit --audit-level=high`, and `pnpm check` in CI.
+- Treat `/health/live` as process health and `/health/ready` as storage readiness; do not use either as an authorization bypass.
+
+The local JSON metadata repository is intentionally a starter implementation. It uses atomic replacement and serialized writes, but a multi-instance deployment requires a shared durable repository.
