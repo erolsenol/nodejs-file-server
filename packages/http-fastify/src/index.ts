@@ -54,6 +54,7 @@ const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g,
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
   const quotaBytesPerPrincipal = options.quotaBytesPerPrincipal;
+  const quotaReservations = new Map<string, number>();
   const startTimes = new WeakMap<object, bigint>();
   app.addHook('onRequest', async (request) => { startTimes.set(request, process.hrtime.bigint()); });
   app.addHook('onResponse', async (request, reply) => {
@@ -110,17 +111,34 @@ export function createApp(options: HttpOptions): FastifyInstance {
     const id = ulid();
     const stored = await options.storage.put(part.file, id);
     if (part.file.truncated) { await options.storage.delete(id); throw new FileServerError('LIMIT_EXCEEDED', 'File is too large', 413); }
-    if (quotaBytesPerPrincipal !== undefined) {
-      const currentUsage = options.repository.totalSize ? await options.repository.totalSize(principal.id) : 0;
-      if (currentUsage + stored.size > quotaBytesPerPrincipal) {
-        await options.storage.delete(id);
-        throw new FileServerError('LIMIT_EXCEEDED', 'Storage quota exceeded', 413);
+    let reservedSize = 0;
+    try {
+      if (quotaBytesPerPrincipal !== undefined) {
+        const currentUsage = options.repository.totalSize ? await options.repository.totalSize(principal.id) : 0;
+        const reservedUsage = quotaReservations.get(principal.id) ?? 0;
+        if (currentUsage + reservedUsage + stored.size > quotaBytesPerPrincipal) {
+          await options.storage.delete(id);
+          throw new FileServerError('LIMIT_EXCEEDED', 'Storage quota exceeded', 413);
+        }
+        quotaReservations.set(principal.id, reservedUsage + stored.size);
+        reservedSize = stored.size;
+      }
+      const record = { id, ownerId: principal.id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
+      try {
+        await options.repository.create(record);
+      } catch (error) {
+        try { await options.storage.delete(id); } catch (cleanupError) { request.log.error({ cleanupError, id }, 'failed to clean up orphaned upload'); }
+        throw error;
+      }
+      options.metrics?.uploadsTotal.inc({ status: 'success' });
+      return reply.code(201).send(toPublicRecord(record));
+    } finally {
+      if (reservedSize > 0) {
+        const remaining = (quotaReservations.get(principal.id) ?? 0) - reservedSize;
+        if (remaining > 0) quotaReservations.set(principal.id, remaining);
+        else quotaReservations.delete(principal.id);
       }
     }
-    const record = { id, ownerId: principal.id, name: part.filename, mimeType: part.mimetype, ...stored, createdAt: new Date().toISOString() } as const;
-    await options.repository.create(record);
-    options.metrics?.uploadsTotal.inc({ status: 'success' });
-    return reply.code(201).send(toPublicRecord(record));
   });
 
   app.get('/v1/files', async (request) => {
