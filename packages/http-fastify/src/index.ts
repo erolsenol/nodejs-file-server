@@ -1,4 +1,6 @@
 import multipart from '@fastify/multipart';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import type { FileRepository, FileStorage } from '@file-server/core';
@@ -12,6 +14,7 @@ export interface HttpOptions {
   readonly allowedMimeTypes: ReadonlySet<string>;
   readonly storage: FileStorage;
   readonly repository: FileRepository;
+  readonly rateLimitMax?: number;
 }
 
 interface ByteRange {
@@ -39,6 +42,8 @@ const safeDownloadName = (name: string): string => name.replace(/[^\x20-\x7E]/g,
 export function createApp(options: HttpOptions): FastifyInstance {
   const app = Fastify({ logger: true, requestIdHeader: 'x-request-id' });
   void app.register(multipart, { limits: { fileSize: options.maxFileSize, files: 1 } });
+  void app.register(helmet, { global: true });
+  void app.register(rateLimit, { max: options.rateLimitMax ?? 100, timeWindow: '1 minute' });
   void app.register(swagger, { openapi: { info: { title: 'Node.js File Server', version: '0.1.0' } } });
   void app.register(swaggerUi, { routePrefix: '/documentation' });
 
