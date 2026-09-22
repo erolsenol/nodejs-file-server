@@ -1,0 +1,21 @@
+services:
+  file-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /app/.data
+      METADATA_DRIVER: sqlite
+      STORAGE_DRIVER: local
+      API_KEY: local-development-key-change-me
+      ALLOWED_MIME_TYPES: application/pdf,image/jpeg,image/png,text/plain,application/zip
+    ports:
+      - "3000:3000"
+    volumes:
+      - file-server-data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  file-server-data:

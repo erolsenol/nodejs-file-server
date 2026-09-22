@@ -50,4 +50,10 @@ pnpm check
 pnpm format
 ```
 
+Run the production starter locally with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
 Licensed under MIT. Contributions are welcome.
