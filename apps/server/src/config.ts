@@ -14,6 +14,7 @@ const configSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   API_KEY: z.string().min(16).default('development-only-change-me'),
+  API_KEYS: z.string().optional(),
   MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
   ALLOWED_MIME_TYPES: z.string().default('application/pdf,image/jpeg,image/png,text/plain,application/zip'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
@@ -33,6 +34,7 @@ export interface AppConfig {
   readonly s3AccessKeyId: string | undefined;
   readonly s3SecretAccessKey: string | undefined;
   readonly apiKey: string;
+  readonly apiKeys: ReadonlyMap<string, string> | undefined;
   readonly maxFileSizeBytes: number;
   readonly allowedMimeTypes: ReadonlySet<string>;
   readonly rateLimitMax: number;
@@ -43,6 +45,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (parsed.NODE_ENV === 'production' && parsed.API_KEY === 'development-only-change-me') {
     throw new Error('API_KEY must be changed before starting in production');
   }
+  const apiKeys = parsed.API_KEYS ? new Map(parsed.API_KEYS.split(',').map((entry) => {
+    const separator = entry.indexOf(':');
+    if (separator < 1 || separator === entry.length - 1) throw new Error('API_KEYS entries must use id:secret format');
+    return [entry.slice(0, separator).trim(), entry.slice(separator + 1).trim()] as const;
+  })) : undefined;
   return {
     nodeEnv: parsed.NODE_ENV,
     host: parsed.HOST,
@@ -57,6 +64,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     s3AccessKeyId: parsed.S3_ACCESS_KEY_ID,
     s3SecretAccessKey: parsed.S3_SECRET_ACCESS_KEY,
     apiKey: parsed.API_KEY,
+    apiKeys,
     maxFileSizeBytes: parsed.MAX_FILE_SIZE_BYTES,
     allowedMimeTypes: new Set(parsed.ALLOWED_MIME_TYPES.split(',').map((value) => value.trim()).filter(Boolean)),
     rateLimitMax: parsed.RATE_LIMIT_MAX,

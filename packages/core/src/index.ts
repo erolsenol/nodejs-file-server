@@ -1,5 +1,6 @@
 export interface FileRecord {
   readonly id: string;
+  readonly ownerId: string;
   readonly name: string;
   readonly mimeType: string;
   readonly size: number;
@@ -17,9 +18,9 @@ export interface FileStorage {
 
 export interface FileRepository {
   create(record: FileRecord): Promise<void>;
-  list(limit: number, offset: number): Promise<readonly FileRecord[]>;
-  findById(id: string): Promise<FileRecord | null>;
-  delete(id: string): Promise<void>;
+  list(limit: number, offset: number, ownerId?: string): Promise<readonly FileRecord[]>;
+  findById(id: string, ownerId?: string): Promise<FileRecord | null>;
+  delete(id: string, ownerId?: string): Promise<void>;
 }
 
 export class FileServerError extends Error {

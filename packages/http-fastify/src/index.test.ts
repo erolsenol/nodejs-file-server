@@ -5,7 +5,7 @@ import { createApp } from './index.js';
 import { createMetrics } from './metrics.js';
 
 const record: FileRecord = {
-  id: 'file-1', name: 'hello.txt', mimeType: 'text/plain', size: 11,
+  id: 'file-1', ownerId: 'default', name: 'hello.txt', mimeType: 'text/plain', size: 11,
   checksum: 'sha256:test', createdAt: '2026-01-01T00:00:00.000Z',
 };
 

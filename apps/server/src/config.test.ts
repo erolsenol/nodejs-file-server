@@ -11,4 +11,9 @@ describe('loadConfig', () => {
     expect(config.port).toBe(3000);
     expect(config.allowedMimeTypes.has('text/plain')).toBe(true);
   });
+
+  it('parses scoped API keys without exposing secrets', () => {
+    const config = loadConfig({ API_KEYS: 'team-a:secret-a,team-b:secret-b' });
+    expect(config.apiKeys).toEqual(new Map([['team-a', 'secret-a'], ['team-b', 'secret-b']]));
+  });
 });
