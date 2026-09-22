@@ -4,6 +4,7 @@
     { "path": "packages/core" },
     { "path": "packages/storage-local" },
     { "path": "packages/repository-json" },
+    { "path": "packages/repository-sqlite" },
     { "path": "packages/http-fastify" },
     { "path": "apps/server" }
   ]
