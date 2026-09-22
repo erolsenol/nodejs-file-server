@@ -1,0 +1,8 @@
+{
+  "name": "@file-server/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "tsc -p tsconfig.json", "dev": "tsx watch src/server.ts", "start": "node dist/server.js" },
+  "dependencies": { "@file-server/core": "workspace:*", "@file-server/http-fastify": "workspace:*", "@file-server/storage-local": "workspace:*", "fastify": "^5.0.0" }
+}
