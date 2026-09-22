@@ -4,10 +4,11 @@ Before exposing the starter to real traffic:
 
 - Set `NODE_ENV=production` and a randomly generated `API_KEY` of at least 16 characters.
 - Put the service behind TLS and a reverse proxy with request and connection timeouts.
-- Mount `.data` on durable storage. The starter uses SQLite metadata by default; replace the storage adapter with S3-compatible object storage for multi-instance deployments.
+- The starter uses SQLite metadata by default. Set `STORAGE_DRIVER=s3` and configure `S3_BUCKET` for AWS S3, MinIO, R2, or another S3-compatible object store in multi-instance deployments.
 - Back up metadata and objects together; test restore before launch.
 - Set a narrow `ALLOWED_MIME_TYPES`, an explicit `MAX_FILE_SIZE_BYTES`, and an appropriate `RATE_LIMIT_MAX`.
 - Add application-level authorization if more than one user or tenant uses the service.
+- For S3-compatible storage, prefer workload identity/instance roles over long-lived access keys; use `S3_ENDPOINT` and `S3_FORCE_PATH_STYLE=true` for local MinIO.
 - Ship logs to a protected sink and avoid logging API keys, file contents, or sensitive filenames.
 - Run `pnpm install --frozen-lockfile`, `pnpm audit --audit-level=high`, and `pnpm check` in CI.
 - Treat `/health/live` as process health and `/health/ready` as storage readiness; do not use either as an authorization bypass.

@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "scripts": { "build": "tsc -p tsconfig.json", "dev": "tsx watch src/server.ts", "start": "node dist/server.js" },
-  "dependencies": { "@file-server/core": "workspace:*", "@file-server/http-fastify": "workspace:*", "@file-server/repository-json": "workspace:*", "@file-server/repository-sqlite": "workspace:*", "@file-server/storage-local": "workspace:*", "dotenv": "^16.4.0", "fastify": "^5.0.0", "zod": "^3.23.0" }
+  "dependencies": { "@file-server/core": "workspace:*", "@file-server/http-fastify": "workspace:*", "@file-server/repository-json": "workspace:*", "@file-server/repository-sqlite": "workspace:*", "@file-server/storage-local": "workspace:*", "@file-server/storage-s3": "workspace:*", "dotenv": "^16.4.0", "fastify": "^5.0.0", "zod": "^3.23.0" }
 }
