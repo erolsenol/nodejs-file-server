@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { access, mkdir, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -19,15 +19,16 @@ export class LocalFileStorage implements FileStorage {
 
   public async put(input: NodeJS.ReadableStream, key: string): Promise<{ size: number; checksum: string }> {
     const destination = this.pathFor(key);
-    const temporary = `${destination}.${process.pid}.tmp`;
+    const temporary = `${destination}.${randomUUID()}.tmp`;
     await mkdir(dirname(destination), { recursive: true });
     const hash = createHash('sha256');
     let size = 0;
-    input.on('data', (chunk: Buffer | string) => {
+    const onData = (chunk: Buffer | string) => {
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       size += buffer.length;
       hash.update(buffer);
-    });
+    };
+    input.on('data', onData);
     try {
       await pipeline(input, createWriteStream(temporary, { flags: 'wx' }));
       await import('node:fs/promises').then(({ rename }) => rename(temporary, destination));
@@ -35,6 +36,8 @@ export class LocalFileStorage implements FileStorage {
     } catch (error) {
       await rm(temporary, { force: true });
       throw error;
+    } finally {
+      input.removeListener('data', onData);
     }
   }
 

@@ -1,5 +1,11 @@
 # @file-server/storage-local
 
+## 0.2.1
+
+### Patch Changes
+
+- Use unique temporary files for concurrent writes to the same key and preserve existing objects when a replacement stream fails.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,0 +1,36 @@
+name: Release container archives
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        architecture: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build immutable local image
+        env:
+          REVISION: ${{ github.sha }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          docker buildx build --load --platform "linux/$ARCHITECTURE" --provenance=false --label "org.opencontainers.image.revision=$REVISION" --tag "local-release/node-file-server:sha-$REVISION" --file docker/Dockerfile .
+      - name: Export archive and checksum
+        env:
+          REVISION: ${{ github.sha }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          docker save "local-release/node-file-server:sha-$REVISION" | gzip > "node-file-server-$ARCHITECTURE.tar.gz"
+          sha256sum "node-file-server-$ARCHITECTURE.tar.gz" > "node-file-server-$ARCHITECTURE.tar.gz.sha256"
+      - name: Attach immutable release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: gh release upload "$RELEASE_TAG" "node-file-server-$ARCHITECTURE.tar.gz" "node-file-server-$ARCHITECTURE.tar.gz.sha256"
